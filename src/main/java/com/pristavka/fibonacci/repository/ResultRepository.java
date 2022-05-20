@@ -10,6 +10,6 @@ import java.util.Optional;
 @Repository
 public interface ResultRepository extends CrudRepository<Result, Long> {
 
-    Optional<Result> findByRequestValue(@Param("requestValue") Integer requestValue);
+    Result findByRequestValue(@Param("requestValue") Integer requestValue);
 }
 

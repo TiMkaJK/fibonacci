@@ -1,5 +1,7 @@
 package com.pristavka.fibonacci.service.impl;
 
+import com.pristavka.fibonacci.entity.Result;
+import com.pristavka.fibonacci.entity.Statistics;
 import com.pristavka.fibonacci.repository.ResultRepository;
 import com.pristavka.fibonacci.repository.StatisticsRepository;
 import com.pristavka.fibonacci.service.FibonacciService;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -20,7 +23,26 @@ public class FibonacciServiceImpl implements FibonacciService {
 
     @Override
     public Integer getFibonacci(Integer requestValue) {
-        return createFibonacciValues(0, 1, requestValue);
+
+        Result savedResult = this.resultRepository.findByRequestValue(requestValue);
+
+        if (Objects.nonNull(savedResult)) {
+            return savedResult.getResponseValue();
+        }
+
+        Integer responseValue = createFibonacciValues(0, 1, requestValue);
+
+        this.resultRepository.save(Result.builder().requestValue(requestValue).responseValue(responseValue).build());
+
+        this.statisticsRepository.findByRequestValue(requestValue)
+                .map(stat -> {
+                    stat.setRequestValue(new AtomicInteger(stat.getRequestValue()).incrementAndGet());
+                    return stat;
+                })
+                .map(this.statisticsRepository::save)
+                .orElse(this.statisticsRepository.save(Statistics.builder().requestValue(requestValue).requestCount(1).build()));
+
+        return responseValue;
     }
 
     private Integer createFibonacciValues(Integer firstValue, Integer secondValue, Integer requestValue) {
