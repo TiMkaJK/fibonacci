@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,26 +22,28 @@ public class FibonacciServiceImpl implements FibonacciService {
     private final ResultRepository resultRepository;
     private final StatisticsRepository statisticsRepository;
 
+    @Transactional
     @Override
     public Integer getFibonacci(Integer requestValue) {
 
         Result savedResult = this.resultRepository.findByRequestValue(requestValue);
 
         if (Objects.nonNull(savedResult)) {
+
+            this.statisticsRepository.findByRequestValue(requestValue)
+                    .map(stat -> {
+                        stat.setRequestCount(new AtomicInteger(stat.getRequestCount()).incrementAndGet());
+                        return stat;
+                    })
+                    .map(this.statisticsRepository::save);
+
             return savedResult.getResponseValue();
         }
 
         Integer responseValue = createFibonacciValues(0, 1, requestValue);
 
         this.resultRepository.save(Result.builder().requestValue(requestValue).responseValue(responseValue).build());
-
-        this.statisticsRepository.findByRequestValue(requestValue)
-                .map(stat -> {
-                    stat.setRequestValue(new AtomicInteger(stat.getRequestValue()).incrementAndGet());
-                    return stat;
-                })
-                .map(this.statisticsRepository::save)
-                .orElse(this.statisticsRepository.save(Statistics.builder().requestValue(requestValue).requestCount(1).build()));
+        this.statisticsRepository.save(Statistics.builder().requestValue(requestValue).requestCount(1).build());
 
         return responseValue;
     }
