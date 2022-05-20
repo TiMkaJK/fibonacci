@@ -1,44 +1,41 @@
 package com.pristavka.fibonacci.service.impl;
 
+import com.pristavka.fibonacci.repository.ResultRepository;
+import com.pristavka.fibonacci.repository.StatisticsRepository;
 import com.pristavka.fibonacci.service.FibonacciService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class FibonacciServiceImpl implements FibonacciService {
 
-    private List<Integer> fibonacciValues = new ArrayList<>();
+    private final ResultRepository resultRepository;
+    private final StatisticsRepository statisticsRepository;
 
     @Override
-    public Integer getFibonacci(Integer value) {
+    public Integer getFibonacci(Integer requestValue) {
+        return createFibonacciValues(0, 1, requestValue);
+    }
 
-        fibonacciValues.add(1);
-        fibonacciValues.add(2);
+    private Integer createFibonacciValues(Integer firstValue, Integer secondValue, Integer requestValue) {
 
-        do {
-            createFibonacciValues();
-        } while (fibonacciValues.get(fibonacciValues.size() - 1) <= value);
+        int result = firstValue + secondValue;
 
-        if (fibonacciValues.contains(value)) {
-            return fibonacciValues.get(fibonacciValues.size() - 1);
-        } else {
-            throw new NoSuchElementException("Its not a Fibonacci value");
+        if (result >= requestValue) {
+            if (Objects.equals(result, requestValue)) {
+                return secondValue + result;
+            } else {
+                throw new NoSuchElementException("Its not a Fibonacci requestValue");
+            }
         }
-    }
 
-    private void createFibonacciValues() {
-        fibonacciValues.add(createFibonacciValue());
-    }
-
-    private Integer createFibonacciValue() {
-        return fibonacciValues.get(fibonacciValues.size() - 2) + fibonacciValues.get(fibonacciValues.size() - 1);
+        return createFibonacciValues(secondValue, result, requestValue);
     }
 }
 
