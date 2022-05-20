@@ -36,7 +36,6 @@ public class FibonacciServiceImpl implements FibonacciService {
                         return stat;
                     })
                     .map(this.statisticsRepository::save);
-
             return savedResult.getResponseValue();
         }
 
